@@ -39,7 +39,6 @@
     position:relative;
   }
   .app > *{position:relative;z-index:1;}
-  /* decorative blobs like the deck's cover slide */
   .app > .blob{position:absolute;border-radius:50%;opacity:.9;z-index:0;pointer-events:none;}
   .blob-1{width:220px;height:220px;background:var(--blue);top:-90px;right:-90px;}
   .blob-2{width:170px;height:170px;background:var(--orange);bottom:-70px;left:-70px;}
@@ -49,7 +48,6 @@
     font-weight:600;margin-bottom:6px;
   }
 
-  /* ---- Meter row (signature element): 8 bars, one per graduação course ---- */
   .meter{
     display:flex;align-items:flex-end;gap:6px;height:64px;margin:22px 0 6px;
   }
@@ -66,7 +64,6 @@
   .meter .bar.leader .bar-fill{background:var(--orange);}
   .meter-caption{font-size:11px;color:var(--muted-lt);text-align:center;margin-bottom:18px;}
 
-  /* ---- Screens ---- */
   .screen{display:none;flex-direction:column;flex:1;animation:fadein .35s ease;}
   .screen.active{display:flex;}
   @keyframes fadein{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
@@ -91,8 +88,8 @@
   .btn-primary{background:var(--orange);color:var(--white);box-shadow:0 8px 20px rgba(255,107,53,.28);}
   .btn-ghost{background:transparent;color:var(--muted-lt);border:1px solid rgba(159,187,221,.35);}
   .btn-block{width:100%;}
+  .btn[disabled]{opacity:.5;cursor:default;}
 
-  /* progress dots */
   .progress{display:flex;gap:6px;margin-bottom:4px;}
   .progress .dot{flex:1;height:4px;border-radius:2px;background:rgba(255,255,255,.15);overflow:hidden;}
   .progress .dot i{display:block;height:100%;width:0%;background:var(--orange);transition:width .3s ease;}
@@ -117,7 +114,6 @@
   .q-footer{margin-top:auto;padding-top:24px;display:flex;justify-content:space-between;align-items:center;}
   .link-back{color:var(--muted-lt);font-size:14px;background:none;border:none;cursor:pointer;}
 
-  /* result */
   .result{text-align:center;}
   .result-badge{
     width:104px;height:104px;border-radius:50%;background:var(--orange);
@@ -128,6 +124,7 @@
   .result .eyebrow{text-align:center;}
   .result h2{font-size:28px;color:var(--white);margin-bottom:10px;line-height:1.2;}
   .result p.tagline{color:var(--muted-lt);font-size:16px;line-height:1.5;padding:0 6px;}
+  .save-status{font-size:12px;color:var(--muted-lt);margin-top:10px;min-height:16px;}
 
   .divider{height:1px;background:rgba(255,255,255,.12);margin:28px 0 22px;}
 
@@ -140,7 +137,18 @@
   .more-card .t{font-size:13px;font-weight:700;color:var(--white);}
   .more-card .d{font-size:11.5px;color:var(--muted-lt);margin-top:3px;line-height:1.35;}
 
-  .actions{display:flex;gap:10px;margin-top:26px;}
+  .actions{display:flex;gap:10px;margin-top:26px;flex-wrap:wrap;}
+  .actions .btn{flex:1;min-width:140px;}
+
+  /* stats screen */
+  .stats-list{display:flex;flex-direction:column;gap:14px;margin-top:10px;}
+  .stats-row{display:flex;flex-direction:column;gap:6px;}
+  .stats-row-top{display:flex;justify-content:space-between;font-size:13px;color:var(--muted-lt);}
+  .stats-row-top strong{color:var(--white);font-weight:700;}
+  .stats-track{height:10px;border-radius:5px;background:rgba(255,255,255,.1);overflow:hidden;}
+  .stats-track i{display:block;height:100%;background:var(--orange);border-radius:5px;transition:width .5s ease;}
+  .stats-empty{color:var(--muted-lt);font-size:14px;text-align:center;margin:30px 0;}
+  .stats-total{font-size:13px;color:var(--muted-lt);text-align:center;margin-top:18px;}
 
   ::selection{background:var(--orange);color:var(--white);}
 </style>
@@ -159,6 +167,7 @@
       <div class="intro-icons" id="intro-icons"></div>
     </div>
     <button class="btn btn-primary btn-block" onclick="startQuiz()">Começar teste →</button>
+    <button class="link-back" style="margin-top:14px;text-align:center;" onclick="showStats()">Ver estatísticas gerais</button>
   </section>
 
   <!-- QUIZ -->
@@ -182,6 +191,7 @@
       <div class="result-badge" id="result-badge"></div>
       <h2 id="result-name"></h2>
       <p class="tagline" id="result-tagline"></p>
+      <div class="save-status" id="save-status"></div>
     </div>
 
     <div class="divider"></div>
@@ -190,7 +200,21 @@
     <div class="more-grid" id="more-grid"></div>
 
     <div class="actions">
-      <button class="btn btn-ghost btn-block" onclick="restart()">Refazer teste</button>
+      <button class="btn btn-ghost" onclick="restart()">Refazer teste</button>
+      <button class="btn btn-ghost" onclick="showStats()">Ver estatísticas</button>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <section class="screen" id="screen-stats">
+    <div class="eyebrow" style="text-align:center;">Banco de respostas</div>
+    <h2 style="text-align:center;font-size:22px;margin:6px 0 20px;">Resultados de todo mundo que já fez o teste</h2>
+    <div id="stats-body">
+      <div class="stats-empty">Carregando…</div>
+    </div>
+    <div class="stats-total" id="stats-total"></div>
+    <div class="actions">
+      <button class="btn btn-ghost btn-block" onclick="restart()">Voltar ao início</button>
     </div>
   </section>
 </div>
@@ -233,7 +257,7 @@ const OTHER_FORMATS = [
   {icon:"chat", t:"Idiomas", d:"Inglês e outras línguas com foco em comunicação real."}
 ];
 
-/* ---------------- Questions: each option gives points to one or more courses ---------------- */
+/* ---------------- Questions ---------------- */
 const QUESTIONS = [
   { q:"No fim de semana livre, você prefere…",
     opts:[
@@ -290,7 +314,6 @@ document.getElementById('intro-icons').innerHTML = COURSE_ORDER.map(k=>{
   return `<div class="chip">${svg(COURSES[k].icon,20)}</div>`;
 }).join('');
 
-/* build meter bars */
 const meterEl = document.getElementById('meter');
 meterEl.innerHTML = COURSE_ORDER.map(k=>`<div class="bar" data-c="${k}"><div class="bar-fill"></div></div>`).join('');
 
@@ -335,7 +358,6 @@ function renderQuestion(){
     <button class="opt" onclick="choose(${i})">
       <span class="letter">${letters[i]}</span><span>${o.t}</span>
     </button>`).join('');
-  // small delay so the progress bar transition is visible
   requestAnimationFrame(()=>{
     const dots = document.querySelectorAll('.progress .dot i');
     if(dots[current]) dots[current].style.width = '0%';
@@ -374,12 +396,122 @@ function restart(){
   showScreen('screen-intro');
 }
 
+/* ================= Persistence via built-in Artifact Storage =================
+   As respostas de todo mundo que fizer o teste ficam guardadas numa única
+   chave compartilhada ("shared"), como um array JSON. Não depende de token
+   nem de serviço externo — funciona automaticamente dentro do artifact. */
+
+const RESPONSES_KEY = 'unisenac-quiz-responses';
+
+function makeResponseId(){
+  return 'resp_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
+}
+
+// Lê o array atual de respostas guardado (shared = true)
+async function fetchAllResponses(){
+  try{
+    const result = await window.storage.get(RESPONSES_KEY, true);
+    if(!result) return [];
+    const parsed = JSON.parse(result.value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch(err){
+    // chave ainda não existe
+    return [];
+  }
+}
+
+async function saveResponse(topCourse){
+  const statusEl = document.getElementById('save-status');
+  const entry = {
+    id: makeResponseId(),
+    course: topCourse,
+    scores: scores,
+    answers: answers,
+    ts: Date.now()
+  };
+
+  try{
+    const current = await fetchAllResponses();
+    current.push(entry);
+    const result = await window.storage.set(RESPONSES_KEY, JSON.stringify(current), true);
+    if(result){
+      statusEl.textContent = 'Resposta salva ✓';
+    } else {
+      statusEl.textContent = 'Não foi possível salvar sua resposta.';
+    }
+  } catch(err){
+    console.error('Erro ao salvar resposta:', err);
+    statusEl.textContent = 'Não foi possível salvar sua resposta.';
+  }
+}
+
+async function loadAllResponses(){
+  const counts = {};
+  COURSE_ORDER.forEach(k=>counts[k]=0);
+  let total = 0;
+
+  let responses;
+  try{
+    responses = await fetchAllResponses();
+  } catch(err){
+    console.error('Erro ao carregar respostas:', err);
+    return {counts, total, failed:true};
+  }
+
+  responses.forEach(r=>{
+    if(r && r.course && counts.hasOwnProperty(r.course)){
+      counts[r.course] += 1;
+      total += 1;
+    }
+  });
+
+  return {counts, total, failed:false};
+}
+
+async function showStats(){
+  showScreen('screen-stats');
+  const body = document.getElementById('stats-body');
+  const totalEl = document.getElementById('stats-total');
+  body.innerHTML = '<div class="stats-empty">Carregando…</div>';
+  totalEl.textContent = '';
+
+  const {counts, total, failed} = await loadAllResponses();
+
+  if(failed){
+    body.innerHTML = '<div class="stats-empty">Não foi possível carregar as estatísticas agora.</div>';
+    return;
+  }
+  if(total === 0){
+    body.innerHTML = '<div class="stats-empty">Ainda não há respostas salvas. Seja o primeiro a fazer o teste!</div>';
+    return;
+  }
+
+  const max = Math.max(1, ...COURSE_ORDER.map(k=>counts[k]));
+  const sorted = [...COURSE_ORDER].sort((a,b)=>counts[b]-counts[a]);
+
+  body.innerHTML = `<div class="stats-list">` + sorted.map(k=>{
+    const c = COURSES[k];
+    const pct = Math.round((counts[k]/max)*100);
+    return `
+      <div class="stats-row">
+        <div class="stats-row-top">
+          <span>${c.name}</span>
+          <strong>${counts[k]}</strong>
+        </div>
+        <div class="stats-track"><i style="width:${pct}%"></i></div>
+      </div>`;
+  }).join('') + `</div>`;
+
+  totalEl.textContent = `${total} pessoa${total===1?'':'s'} já fizeram o teste`;
+}
+
 function showResult(){
   const top = COURSE_ORDER.reduce((a,b)=>scores[b]>scores[a]?b:a, COURSE_ORDER[0]);
   const c = COURSES[top];
   document.getElementById('result-badge').innerHTML = svg(c.icon,52);
   document.getElementById('result-name').textContent = c.name;
   document.getElementById('result-tagline').textContent = c.tagline;
+  document.getElementById('save-status').textContent = 'Salvando resposta…';
 
   document.getElementById('more-grid').innerHTML = OTHER_FORMATS.map(f=>`
     <div class="more-card">
@@ -389,6 +521,7 @@ function showResult(){
     </div>`).join('');
 
   showScreen('screen-result');
+  saveResponse(top);
 }
 </script>
 </body>
