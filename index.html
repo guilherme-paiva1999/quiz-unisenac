@@ -256,7 +256,9 @@ const ICONS = {
   cap: '<path d="M12 4L2 9L12 14L22 9L12 4Z" fill="currentColor"/><path d="M6 11.5V16C6 17.7 8.7 19 12 19C15.3 19 18 17.7 18 16V11.5" stroke="currentColor" stroke-width="1.6" fill="none"/>',
   book: '<path d="M4 5C4 4.4 4.4 4 5 4H11V20H5C4.4 20 4 19.6 4 19V5Z" fill="currentColor"/><path d="M20 5C20 4.4 19.6 4 19 4H13V20H19C19.6 20 20 19.6 20 19V5Z" fill="currentColor" opacity="0.55"/>',
   star: '<path d="M12 3L14.5 9L21 9.7L16.2 14L17.6 20.5L12 17.1L6.4 20.5L7.8 14L3 9.7L9.5 9L12 3Z" fill="currentColor"/>',
-  chat: '<path d="M4 5H20V16H9L4 20V5Z" fill="currentColor"/>'
+  chat: '<path d="M4 5H20V16H9L4 20V5Z" fill="currentColor"/>',
+  cpu: '<rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor"/><rect x="10" y="10" width="4" height="4" fill="var(--navy)"/><path d="M9 3V6M12 3V6M15 3V6M9 18V21M12 18V21M15 18V21M3 9H6M3 12H6M3 15H6M18 9H21M18 12H21M18 15H21" stroke="currentColor" stroke-width="1.5"/>',
+  camera: '<rect x="3" y="6" width="13" height="12" rx="2" fill="currentColor"/><path d="M16 10L21 7V17L16 14V10Z" fill="currentColor"/>'
 };
 function svg(name, size){ return `<svg viewBox="0 0 24 24" width="${size||24}" height="${size||24}">${ICONS[name]}</svg>`; }
 
@@ -269,9 +271,11 @@ const COURSES = {
   gerenciais: {name:"Processos Gerenciais",                    icon:"briefcase",tagline:"Você organiza pessoas, tempo e recursos pra tudo funcionar melhor."},
   redes:      {name:"Redes de Computadores",                  icon:"network",  tagline:"Você constrói as conexões que mantêm o mundo online."},
   seguranca:  {name:"Segurança Cibernética",                   icon:"shield",   tagline:"Você protege sistemas, dados e pessoas contra ataques digitais."},
-  gastronomia:{name:"Gastronomia",                             icon:"utensils", tagline:"Você transforma ingredientes em experiências memoráveis."}
+  gastronomia:{name:"Gastronomia",                             icon:"utensils", tagline:"Você transforma ingredientes em experiências memoráveis."},
+  cc:         {name:"Ciência da Computação",                   icon:"cpu",      tagline:"Você entende a lógica por trás de tudo: algoritmos, dados e como as máquinas realmente pensam."},
+  multimidia: {name:"Produção Multimídia",                     icon:"camera",   tagline:"Você conta histórias em vídeo, áudio e imagem, do roteiro à edição final."}
 };
-const COURSE_ORDER = ["ads","moda","ia","marketing","gerenciais","redes","seguranca","gastronomia"];
+const COURSE_ORDER = ["ads","moda","ia","marketing","gerenciais","redes","seguranca","gastronomia","cc","multimidia"];
 
 const OTHER_FORMATS = [
   {icon:"cap",  t:"Pós-graduação e MBA", d:"Pra quem já está no mercado e quer subir de nível."},
@@ -282,47 +286,61 @@ const OTHER_FORMATS = [
 
 /* ---------------- Questions ---------------- */
 const QUESTIONS = [
-  { q:"No fim de semana livre, você prefere…",
+  { q:"Seu grupo vai criar um projeto pra feira de ciências da escola. Qual tarefa você pega primeiro?",
     opts:[
-      {t:"Montar ou consertar algo no computador", pts:{ads:2}},
-      {t:"Cozinhar pra galera", pts:{gastronomia:2}},
-      {t:"Organizar uma planilha ou um grupo de trabalho", pts:{gerenciais:2}},
-      {t:"Criar um look ou pensar num evento", pts:{moda:2, marketing:1}}
+      {t:"Testar tudo até garantir que não vai travar na hora de apresentar", pts:{ads:2}},
+      {t:"Organizar quem faz o quê e o prazo de cada parte", pts:{gerenciais:2}},
+      {t:"Pensar em como apresentar a ideia de um jeito que prenda a atenção da banca", pts:{marketing:2}},
+      {t:"Cuidar de como tudo vai ficar visualmente: cartaz, protótipo, apresentação", pts:{moda:2}}
     ]},
-  { q:"Qual dessas te deixa curioso(a)?",
+  { q:"Um app do seu celular começa a travar direto. O que passa pela sua cabeça?",
     opts:[
-      {t:"Como a Netflix sabe o que eu quero assistir", pts:{ia:2}},
-      {t:"Como uma marca de roupa vira febre nacional", pts:{marketing:2, moda:1}},
-      {t:"Como o wi-fi de casa realmente funciona", pts:{redes:2}},
-      {t:"Como hackers são pegos e sistemas são protegidos", pts:{seguranca:2}}
+      {t:"Queria entender a lógica do que tá dando errado, passo a passo", pts:{cc:2}},
+      {t:"Deve ser o wi-fi de casa que não aguenta", pts:{redes:2}},
+      {t:"Espero que meus dados não tenham vazado nesse processo", pts:{seguranca:2}},
+      {t:"Seria bom se o app aprendesse sozinho e parasse de travar com o tempo", pts:{ia:2}}
     ]},
-  { q:"Numa lista de tarefas em grupo, você é quem…",
+  { q:"Você ganhou uma grana extra e quer investir num hobby novo. O que escolhe?",
     opts:[
-      {t:"Organiza prazos e distribui responsabilidades", pts:{gerenciais:2}},
-      {t:"Testa tudo até achar o erro", pts:{ads:1, seguranca:1}},
-      {t:"Pensa em como apresentar a ideia pro público", pts:{marketing:2}},
-      {t:"Cuida pra tudo ficar visualmente coerente", pts:{moda:1, marketing:1}}
+      {t:"Um curso online pra criar meu primeiro app ou joguinho", pts:{ads:2}},
+      {t:"Uma câmera melhor pra gravar e editar vídeos", pts:{multimidia:2}},
+      {t:"Tecido e aviamento pra criar uma peça de roupa minha", pts:{moda:2}},
+      {t:"Ingredientes bons pra testar uma receita nova", pts:{gastronomia:2}}
     ]},
-  { q:"Escolha um sonho de carreira:",
+  { q:"Qual comentário de professor combina mais com você?",
     opts:[
-      {t:"Criar um app usado por milhares de pessoas", pts:{ads:2}},
-      {t:"Ter minha própria marca de roupa", pts:{moda:2}},
-      {t:"Trabalhar com robótica e inteligência artificial", pts:{ia:2}},
-      {t:"Ter meu próprio restaurante", pts:{gastronomia:2}}
+      {t:"Você sempre encontra o erro que ninguém mais viu", pts:{seguranca:2}},
+      {t:"Você organiza o grupo sem nem perceber que virou o líder", pts:{gerenciais:2}},
+      {t:"Você resolve um problema de lógica rapidinho, tipo quebra-cabeça", pts:{cc:2}},
+      {t:"Você enxerga padrões que ninguém mais percebe", pts:{ia:2}}
     ]},
-  { q:"Qual matéria da escola você mais curte?",
+  { q:"Se fosse montar um canal ou perfil do zero, o que mais te empolga?",
     opts:[
-      {t:"Matemática e lógica", pts:{ia:1, ads:1, redes:1}},
-      {t:"Artes", pts:{moda:2}},
-      {t:"Química ou biologia", pts:{gastronomia:2}},
-      {t:"História ou sociologia", pts:{marketing:1, gerenciais:1}}
+      {t:"Programar o site ou app onde tudo vai rodar", pts:{ads:2}},
+      {t:"Pensar em como fazer o conteúdo viralizar", pts:{marketing:2}},
+      {t:"Gravar e editar tudo com qualidade profissional", pts:{multimidia:2}},
+      {t:"Garantir que tudo aguente muito acesso ao mesmo tempo, sem cair", pts:{redes:2}}
     ]},
-  { q:"Qual frase combina mais com você?",
+  { q:"Num evento beneficente da escola, você prefere cuidar de…",
     opts:[
-      {t:"Gosto de proteger e cuidar (dados, pessoas, coisas)", pts:{seguranca:2}},
-      {t:"Gosto de conectar pessoas e redes", pts:{redes:1, marketing:1}},
-      {t:"Gosto de planejar e deixar processos redondos", pts:{gerenciais:2}},
-      {t:"Gosto de criar experiências: comida, moda, conteúdo", pts:{gastronomia:1, moda:1, marketing:1}}
+      {t:"Cardápio e comida do evento", pts:{gastronomia:2}},
+      {t:"Visual, roupa e decoração do espaço", pts:{moda:2}},
+      {t:"Divulgação nas redes pra lotar o evento", pts:{marketing:2}},
+      {t:"Planilha de gastos, prazos e fornecedores", pts:{gerenciais:2}}
+    ]},
+  { q:"Se pudesse escolher um superpoder tecnológico, qual seria?",
+    opts:[
+      {t:"Entender qualquer sistema por dentro, como ele foi programado", pts:{cc:2}},
+      {t:"Prever o que vai acontecer antes de acontecer", pts:{ia:2}},
+      {t:"Ser imune a qualquer ataque ou invasão digital", pts:{seguranca:2}},
+      {t:"Conectar qualquer lugar do mundo numa rede instantânea", pts:{redes:2}}
+    ]},
+  { q:"Se imagina daqui a 10 anos, feliz no trabalho. O que está fazendo?",
+    opts:[
+      {t:"Criando um sistema ou app usado por muita gente", pts:{ads:2}},
+      {t:"Dirigindo a produção de um vídeo, clipe ou campanha", pts:{multimidia:2}},
+      {t:"Comandando a cozinha do seu próprio restaurante", pts:{gastronomia:2}},
+      {t:"Liderando uma equipe e tocando os processos de um negócio", pts:{gerenciais:2}}
     ]}
 ];
 
