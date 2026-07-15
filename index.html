@@ -214,10 +214,33 @@
     </div>
     <div class="stats-total" id="stats-total"></div>
     <div class="actions">
-      <button class="btn btn-ghost btn-block" onclick="restart()">Voltar ao início</button>
+      <button class="btn btn-ghost" onclick="exportJSON()">Baixar .json</button>
+      <button class="btn btn-ghost" onclick="restart()">Voltar ao início</button>
     </div>
   </section>
 </div>
+
+<!-- ===================== FIREBASE ===================== -->
+<!-- SDK "compat" (mais simples, sem precisar de bundler) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+  // 1) Cole aqui a configuração que o Firebase te deu no passo 4 do setup.
+  //    (console.firebase.google.com > Configurações do projeto > Seus apps > Web)
+  const firebaseConfig = {
+    apiKey: "AIzaSyDNHd9tNLuTdJg9sgtFYvV0F7McPTXzQCM",
+    authDomain: "unisenac-quiz.firebaseapp.com",
+    databaseURL: "https://unisenac-quiz-default-rtdb.firebaseio.com",
+    projectId: "unisenac-quiz",
+    storageBucket: "unisenac-quiz.firebasestorage.app",
+    messagingSenderId: "225179096578",
+    appId: "1:225179096578:web:e4d92bda5245f29667b91b",
+    measurementId: "G-28WTBNTGDE"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+</script>
 
 <script>
 /* ---------------- Icons (simple inline SVG, single color via currentColor) ---------------- */
@@ -396,76 +419,58 @@ function restart(){
   showScreen('screen-intro');
 }
 
-/* ================= Persistence via built-in Artifact Storage =================
-   As respostas de todo mundo que fizer o teste ficam guardadas numa única
-   chave compartilhada ("shared"), como um array JSON. Não depende de token
-   nem de serviço externo — funciona automaticamente dentro do artifact. */
+/* ================= Persistence via Firebase Realtime Database =================
+   As respostas de todo mundo que fizer o teste ficam guardadas no nó "responses"
+   do Realtime Database, como uma árvore JSON. O Firebase gera um "push key"
+   único pra cada resposta (ordenável por tempo), sem precisar de backend próprio. */
 
-const RESPONSES_KEY = 'unisenac-quiz-responses';
-
-function makeResponseId(){
-  return 'resp_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
-}
-
-// Lê o array atual de respostas guardado (shared = true)
-async function fetchAllResponses(){
-  try{
-    const result = await window.storage.get(RESPONSES_KEY, true);
-    if(!result) return [];
-    const parsed = JSON.parse(result.value);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch(err){
-    // chave ainda não existe
-    return [];
-  }
-}
-
-async function saveResponse(topCourse){
-  const statusEl = document.getElementById('save-status');
-  const entry = {
-    id: makeResponseId(),
+function makeEntry(topCourse){
+  return {
     course: topCourse,
     scores: scores,
     answers: answers,
     ts: Date.now()
   };
+}
+
+async function saveResponse(topCourse){
+  const statusEl = document.getElementById('save-status');
+  const entry = makeEntry(topCourse);
 
   try{
-    const current = await fetchAllResponses();
-    current.push(entry);
-    const result = await window.storage.set(RESPONSES_KEY, JSON.stringify(current), true);
-    if(result){
-      statusEl.textContent = 'Resposta salva ✓';
-    } else {
-      statusEl.textContent = 'Não foi possível salvar sua resposta.';
-    }
+    await db.ref('responses').push(entry);
+    statusEl.textContent = 'Resposta salva ✓';
   } catch(err){
     console.error('Erro ao salvar resposta:', err);
     statusEl.textContent = 'Não foi possível salvar sua resposta.';
   }
 }
 
+// Guarda em memória a última leitura completa, pra poder exportar em .json
+let lastSnapshotData = null;
+
 async function loadAllResponses(){
   const counts = {};
   COURSE_ORDER.forEach(k=>counts[k]=0);
   let total = 0;
 
-  let responses;
   try{
-    responses = await fetchAllResponses();
+    const snap = await db.ref('responses').once('value');
+    const data = snap.val() || {};
+    lastSnapshotData = data;
+
+    Object.values(data).forEach(r=>{
+      if(r && r.course && counts.hasOwnProperty(r.course)){
+        counts[r.course] += 1;
+        total += 1;
+      }
+    });
+
+    return {counts, total, failed:false};
   } catch(err){
     console.error('Erro ao carregar respostas:', err);
     return {counts, total, failed:true};
   }
-
-  responses.forEach(r=>{
-    if(r && r.course && counts.hasOwnProperty(r.course)){
-      counts[r.course] += 1;
-      total += 1;
-    }
-  });
-
-  return {counts, total, failed:false};
 }
 
 async function showStats(){
@@ -478,7 +483,7 @@ async function showStats(){
   const {counts, total, failed} = await loadAllResponses();
 
   if(failed){
-    body.innerHTML = '<div class="stats-empty">Não foi possível carregar as estatísticas agora.</div>';
+    body.innerHTML = '<div class="stats-empty">Não foi possível carregar as estatísticas agora. Confira se o firebaseConfig foi preenchido corretamente.</div>';
     return;
   }
   if(total === 0){
@@ -503,6 +508,22 @@ async function showStats(){
   }).join('') + `</div>`;
 
   totalEl.textContent = `${total} pessoa${total===1?'':'s'} já fizeram o teste`;
+}
+
+function exportJSON(){
+  if(!lastSnapshotData){
+    alert('Carregue as estatísticas primeiro.');
+    return;
+  }
+  const blob = new Blob([JSON.stringify(lastSnapshotData, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `respostas-quiz-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
 
 function showResult(){
